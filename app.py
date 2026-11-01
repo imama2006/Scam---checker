@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import base64
 
-API_KEY = "85aedc8a7635c50bb42308bd61"
+API_KEY = st.secrets["API_KEY"]
 
 st.set_page_config(page_title="Pakistani Scam Link Checker", page_icon="🛡️", layout="centered")
 
