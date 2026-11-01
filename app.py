@@ -1,31 +1,46 @@
-
 import streamlit as st
-import requests, base64, time
+import requests
+import base64
 
-API_KEY = "85aedc8a7635c50bb42308bd61a42caef903248c75275a2930be3ac98d52d4ce"
+API_KEY = "85aedc8a7635c50bb42308bd61"
 
-st.set_page_config(page_title="Pakistan Link Checker", page_icon="🛡️")
+st.set_page_config(page_title="Pakistani Scam Link Checker", page_icon="🛡️", layout="centered")
+
 st.title("🛡️ Pakistani Scam Link Checker")
-st.write("WhatsApp wala koi bhi link yahan paste karo, mai bataungi Safe hai ya Scam!")
+st.write("WhatsApp wala koi bhi link yahan check karo, 2 second mai pata chalega!")
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def check_scam(link):
+    try:
+        url_id = base64.urlsafe_b64encode(link.encode()).decode().strip("=")
+        headers = {"x-apikey": API_KEY}
+        url = f"https://www.virustotal.com/api/v3/urls/{url_id}"
+        r = requests.get(url, headers=headers, timeout=10)
+        return r.json()
+    except Exception as e:
+        return {"error": str(e)}
 
 link = st.text_input("Link yahan paste karo:")
 
-if st.button("Check Karo"):
-    if link:
-        with st.spinner("Checking... 20 sec wait"):
-            headers = {"x-apikey": API_KEY}
-            requests.post("https://www.virustotal.com/api/v3/urls", headers=headers, data={"url": link})
-            time.sleep(20)
-            url_id = base64.urlsafe_b64encode(link.encode()).decode().strip("=")
-            r = requests.get(f"https://www.virustotal.com/api/v3/urls/{url_id}", headers=headers)
-            if r.status_code == 200:
-                stats = r.json()['data']['attributes']['last_analysis_stats']
-                mal = stats['malicious']
-                if mal > 2:
-                    st.error(f"❌ KHATRA! {mal} companies ne isko Scam kaha hai. Mat kholna!")
-                else:
-                    st.success(f"✅ SAFE HAI! {stats['harmless']} companies ne safe kaha.")
-            else:
-                st.warning("Pehli baar hai, 1 min baad dubara Check Karo button dabao")
-    else:
+if st.button("Check Karo ⚡"):
+    if not link:
         st.warning("Pehle link to paste karo!")
+    else:
+        with st.spinner("Checking... 2 sec wait karo ⚡"):
+            result = check_scam(link)
+            
+            if "error" in result:
+                st.error(f"Error: {result['error']}")
+            else:
+                stats = result.get("data", {}).get("attributes", {}).get("last_analysis_stats", {})
+                malicious = stats.get("malicious", 0)
+                
+                if malicious > 2:
+                    st.error(f"⚠️ SCAM HAI! {malicious} antivirus ne dangerous bataya")
+                elif malicious > 0:
+                    st.warning(f"⚠️ Thora shak hai, {malicious} ne flag kia")
+                else:
+                    st.success("✅ Safe lag raha hai, koi scam nahi mila")
+                
+                with st.expander("Detail Report Dekho"):
+                    st.json(stats)
